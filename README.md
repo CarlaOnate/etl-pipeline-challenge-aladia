@@ -120,7 +120,48 @@ Log-based CDC would be implemented for real-world deployment:
 - Minimal database performance impact
 - Better suited for high-velocity data streams
 
+## 3. Message Queue
 
+### Technology
+- **Queue System**: RabbitMQ
 
+### Implementation Details
+
+**Queue Configuration**
+- Single queue named after the database collection
+- One connection to RabbitMQ server (multiple connections possible but not used)
+- **Delivery Guarantee**: At-least-once delivery
+
+**Configuration Decisions:**
+The system uses a single queue since there is only one collection to monitor. One connection to the RabbitMQ server is sufficient for the exercise scope, though multiple connections are supported. At-least-once delivery mode is configured to prevent any data loss.
+
+**Message Flow**
+```python
+Producer → RabbitMQ Connection → Queue (collection_name) → Consumer
+```
+
+### Trade-offs
+
+**Delivery Guarantee Analysis**
+
+| Mode | Data Loss Risk | Duplication Risk | Selected |
+|------|----------------|------------------|----------|
+| At-most-once | High | None | - |
+| **At-least-once** | None | Possible | ✓ |
+| Exactly-once | None | None | - |
+
+**Design Priorities:**
+1. **Prevent data loss** - Some data loss is acceptable for live analytics, but better avoided
+2. **Prevent duplicate data in warehouse** - Ensure data quality in consumer
+
+**Idempotency Considerations:**
+- **Consumer idempotence**: May reprocess duplicates unnecessarily
+- **Warehouse write idempotence**: Prevents duplicates from being written
+- **Chosen approach**: Warehouse write idempotence for simplicity
+
+**Trade-off Impact:**
+This approach ensures no data loss but the consumer may spend extra time processing duplicate messages. As an improvement, idempotence would be added to both the consumer (to prevent reprocessing) and warehouse writes (to prevent duplicate storage). In live analytics workloads some small data loss is theoretically acceptable, but at-least-once delivery ensures data completeness while relying on warehouse-level deduplication.
+
+> **Important!** If the analytics involve financial data, legal data or inventory management, data loss must be prevented at all costs. For this exercise our live analytics show something like: % of people who finished a video.
 
 
