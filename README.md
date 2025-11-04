@@ -129,7 +129,7 @@ Log-based CDC would be implemented for real-world deployment:
 
 **Queue Configuration**
 - Single queue named after the database collection
-- One connection to RabbitMQ server (multiple connections possible but not used)
+- One connection to RabbitMQ server
 - **Delivery Guarantee**: At-least-once delivery
 
 **Configuration Decisions:**
