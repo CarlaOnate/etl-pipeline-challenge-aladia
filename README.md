@@ -153,6 +153,7 @@ Producer → RabbitMQ Connection → Queue (collection_name) → Consumer
 **Design Priorities:**
 1. **Prevent data loss** - Some data loss is acceptable for live analytics, but better avoided
 2. **Prevent duplicate data in warehouse** - Ensure data quality in consumer
+3. **No ordering** - FIFO, failed messgaes go back to the queue.
 
 **Idempotency Considerations:**
 - **Consumer idempotence**: May reprocess duplicates unnecessarily
@@ -164,4 +165,49 @@ This approach ensures no data loss but the consumer may spend extra time process
 
 > **Important!** If the analytics involve financial data, legal data or inventory management, data loss must be prevented at all costs. For this exercise our live analytics show something like: % of people who finished a video.
 
+No special ordering is used for this implementation. The data doesn't need to be processed in a specific order because the final outcome will be an aggregation operation. This means the order doesn't affect the final result.
+
+
+## 4. Data Processing
+
+### Technology
+- **Processing Framework**: Apache Beam
+- **Queue Client**: Pika (Python)
+
+### Implementation Details
+
+**Consumer Architecture**
+- Pika Client connects to RabbitMQ server
+- Subscribes to single queue (one collection = one queue)
+- Callback function triggered for each message event
+
+**Transformation Pipeline**
+```python
+Message → Clean → Transform → Enrich → Load to Warehouse
+```
+
+**Data Enrichment**
+Calculates video watch completion percentage:
+```python
+completion_rate = (watched_time / total_video_time) * 100
+```
+
+**Duplicate Handling**
+- Consumer does not prevent reprocessing of duplicate messages
+- Warehouse write method ensures no duplicate data insertion
+- Trade-off: Consumer may reprocess duplicates but warehouse remains clean
+
+### Architectural Decisions
+
+**Processing Order**: 
+No special ordering is implemented. Data doesn't need specific ordering because the final outcome is an aggregation operation, meaning order doesn't affect the final result.
+
+
+**Idempotency Strategy**
+- **Current implementation**: Warehouse-level deduplication only
+- **Production recommendation**: Add consumer-level idempotency to prevent unnecessary reprocessing and reduce compute overhead
+
+
+**Data Quality**: 
+Transformation includes cleaning and enrichment and transforms the data to match the data warehouse schema.
 
