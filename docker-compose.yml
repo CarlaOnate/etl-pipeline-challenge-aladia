@@ -22,8 +22,8 @@ services:
       test: rabbitmq-diagnostics -q ping
 
   consumer:
-    build: ./producer
-    container_name: cdc-producer
+    build: ./consumer
+    container_name: consumer
     restart: on-failure
     depends_on:
       rabbitmq:
