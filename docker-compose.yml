@@ -1,0 +1,32 @@
+services:
+  producer:
+    build: ./producer
+    container_name: cdc-producer
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+
+  rabbitmq:
+    image: rabbitmq:4.2.0-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"      # AMQP protocol
+      - "15672:15672"    # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+
+  consumer:
+    build: ./producer
+    container_name: cdc-producer
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
