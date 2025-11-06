@@ -1,0 +1,60 @@
+services:
+  producer:
+    build: ./producer
+    container_name: cdc-producer
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+
+  rabbitmq:
+    image: rabbitmq:4.2.0-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"      # AMQP protocol
+      - "15672:15672"    # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  consumer:
+    build: ./consumer
+    container_name: consumer
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    env_file:
+      - .env
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9000:9000"  # Native client
+    environment:
+      CLICKHOUSE_DB: video_analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse-password
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD", "clickhouse-client", "--query", "SELECT 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  clickhouse_data:
