@@ -3,7 +3,7 @@ import apache_beam as beam
 class ModifyStructure(beam.DoFn):
     def process(self, element):
         try:
-            flat_record = { # Todo: Modify depending warehouse schema
+            flat_record = {
                 'document_id': element.get('document_id'),
                 'video_id': element['data'].get('video_id'),
                 'session_id': element['data'].get('session_id'),
@@ -12,7 +12,7 @@ class ModifyStructure(beam.DoFn):
                 'watched_ratio': element['data'].get('watched_ratio'),
                 'device_type': element['data'].get('device_type'),
                 'quality': element['data'].get('quality'),
-                'processed_at': element['data'].get('timestamp')
+                'timestamp': element['data'].get('timestamp')
             }
 
             yield flat_record

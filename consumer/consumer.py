@@ -15,18 +15,17 @@ def get_message():
     channel.queue_declare(queue='video_log', durable=True)
     channel.basic_consume(queue='video_log', on_message_callback=callback, auto_ack=False)
 
-    print(' [*] Waiting for messages')
+    logger.info(' [*] Waiting for messages')
     channel.start_consuming()
 
 
 def callback(ch, method, properties, body):
-    print(f"\n[*] Received message")
+    logger.info(f"\n[*] Received message")
 
     try:
-        # Parse the incoming message
         message_str = body.decode('utf-8')
         message_data = json.loads(message_str)
-        operation_type = message_data['data'].get('operation')
+        operation_type = message_data['operation']
 
         # Create and run pipeline for this single message
         with beam.Pipeline() as pipeline:
@@ -40,7 +39,6 @@ def callback(ch, method, properties, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
         print("[✓] Message processed successfully\n")
-
     except Exception as e:
         print(f"[✗] Error processing message: {e}\n")
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
