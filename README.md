@@ -321,6 +321,19 @@ docker compose logs -f [service_name]
 - Connection resilience for initial service startup failures
 - Enhanced error messages for easier debugging and maintenance
 
-# Working example
+### Overall conclusion
+The pipeline is containerized into four isolated components (CDC Producer, Message Queue, Consumer, Warehouse) + Cloud Database, each is independently deployable and maintainable. So the project has a modular approach that makes it easy to maintain. Architectural decisions are documented with trade-off analysis tables throughout this README. This current implementation is not production ready but it's the base for an efficient and easy to maintain etl-pipeline. The system implements manual acknowledgements and message requeuing to prevent data loss. However, resilience needs improvement: no retry logic for container restarts, no failed message handling (which can block the queue), and connection handling on service startup failures. The pipeline currently fails loudly rather than gracefully recovering. All the failures are logged aproppriately. The architecture scales conceptually (add more collections → add more queues/consumers), but current implementation has bottlenecks: single-threaded processing, per-message pipeline creation, and connection pooling issues. With identified improvements (batching, proper connection management, log-based CDC, multi-threading), this would scale with data volume and team size.
 
+---
+
+
+# Working example
+### Docker Logs
+![Docker logs for all containers](assets/dockerlogs.gif)
+
+### RabbitMQ
+![Rabbit management UI](assets/rabbitmq.gif)
+
+### Data Warehouse
+![Data warehouse management UI](assets/clickhouse.png)
 
